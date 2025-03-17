@@ -1,4 +1,4 @@
-numpy==1.23.5  # (or latest version)
+numpy
 pandas
 gdown
 openpyxl
