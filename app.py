@@ -66,7 +66,7 @@ if "uploaded_data" not in st.session_state:
 
 with col1:
     # STEP 1: DOWNLOAD TEMPLATE
-    st.subheader("Step 1: Download Data Format and fill it with your wine data in the input sheet")
+    st.subheader("Step 1: Download the data format and enter your wine information in the input sheet.")
     
     template_path = "Wine Data.xlsx"  # Temporary path for execution
     download_result_template = download_from_github(DATA_TEMPLATE_URL, template_path)
