@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import shutil
-import datetime
 import subprocess
 import gdown
 
@@ -11,11 +9,8 @@ import gdown
 GITHUB_REPO = "https://github.com/GOUFANG2021/Calcium-tartrate-model/raw/main"
 
 # File download URLs from GitHub
+MODEL_PY_URL = f"{GITHUB_REPO}/CaTarModel.py"
 DATA_TEMPLATE_URL = f"{GITHUB_REPO}/Wine%20Data.xlsx"
-
-# Local directory for storing session files
-LOCAL_SESSION_DIR = os.path.expanduser("~/Downloads/CalciumTartrateSessions")  # User's downloads folder
-os.makedirs(LOCAL_SESSION_DIR, exist_ok=True)
 
 # ======================== FUNCTION TO DOWNLOAD FILE FROM GITHUB ===========================
 def download_from_github(url, output_path):
@@ -26,13 +21,16 @@ def download_from_github(url, output_path):
     except Exception as e:
         return f"❌ Failed to download {os.path.basename(output_path)}: {e}"
 
-# ======================== FUNCTION TO RUN MODEL ===========================
-def run_external_script(data_path):
-    """Run the model stored in the Streamlit environment using the user's uploaded data."""
-    original_dir = os.getcwd()
-    model_path = "CaTarModel.py"  # Assumes model is already present in the environment
+# ======================== FUNCTION TO RUN MODEL DIRECTLY FROM GITHUB ===========================
+def run_model_from_github(model_url, data_path):
+    """Download the model from GitHub and execute it with the uploaded data file."""
+    model_path = "CaTarModel.py"  # Temporary local path for execution
+
+    # Download model file from GitHub
+    download_result = download_from_github(model_url, model_path)
+
+    # Run the model
     try:
-        os.chdir(os.path.dirname(data_path))  # Set working directory to user's Downloads folder
         process = subprocess.Popen(
             ["python", model_path, data_path],
             stdout=subprocess.PIPE,
@@ -40,13 +38,11 @@ def run_external_script(data_path):
             text=True
         )
         output, error = process.communicate()
-        os.chdir(original_dir)  # Change back to original directory
         
         if error:
             return f"❌ Model execution failed: {error}"
         return output  # Capture and return printed output
     except Exception as e:
-        os.chdir(original_dir)  # Ensure we revert back to original directory
         return f"❌ Error running model: {e}"
 
 # ======================== STREAMLIT UI ===========================
@@ -66,10 +62,7 @@ with col1:
     # STEP 1: DOWNLOAD TEMPLATE
     st.subheader("Step 1: Download Required File")
     
-    # Define paths for user’s local download folder
-    template_path = os.path.join(LOCAL_SESSION_DIR, "Wine Data.xlsx")
-
-    # Download template file from GitHub
+    template_path = "Wine Data.xlsx"  # Temporary path for execution
     download_result_template = download_from_github(DATA_TEMPLATE_URL, template_path)
 
     # Provide download button
@@ -94,23 +87,17 @@ with col1:
         if st.session_state.uploaded_data is None:
             st.error("⚠️ Please upload a wine data file before running the model.")
         else:
-            # Create a new session folder inside user's Downloads folder
-            session_number = len(st.session_state.simulation_results) + 1
-            session_id = f"session_{session_number}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            session_path = os.path.join(LOCAL_SESSION_DIR, session_id)
-            os.makedirs(session_path, exist_ok=True)
-
-            # Save uploaded file in the session folder
-            uploaded_file_path = os.path.join(session_path, "Wine Data.xlsx")
+            # Save uploaded file temporarily
+            uploaded_file_path = "Wine Data.xlsx"
             with open(uploaded_file_path, "wb") as f:
                 f.write(st.session_state.uploaded_data.getbuffer())
 
-            # Run model from user's local folder
-            results = run_external_script(uploaded_file_path)
+            # Run model from GitHub
+            results = run_model_from_github(MODEL_PY_URL, uploaded_file_path)
 
             # Store results
-            st.session_state.simulation_results[f"Simulation {session_number}"] = results  
-            st.success(f"✅ Simulation {session_number} completed! Check results on the right.")
+            st.session_state.simulation_results["Latest Simulation"] = results  
+            st.success("✅ Model execution completed! Check results on the right.")
 
 with col2:
     # DISPLAY RESULTS FOR ALL SESSIONS
