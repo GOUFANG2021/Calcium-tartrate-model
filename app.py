@@ -5,15 +5,6 @@ import subprocess
 import gdown
 import datetime
 
-# ======================== ENVIRONMENT CHECK ===========================
-st.sidebar.title("🔍 Environment Check")
-
-# Run pip freeze to see installed packages
-installed_packages = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
-
-# Display installed packages
-st.sidebar.text_area("Installed Packages", installed_packages.stdout, height=300)
-
 # ======================== DEFINE PATHS ===========================
 # GitHub repository base URL
 GITHUB_REPO = "https://github.com/GOUFANG2021/Calcium-tartrate-model/raw/main"
@@ -33,23 +24,28 @@ def download_from_github(url, output_path):
 
 # ======================== FUNCTION TO RUN MODEL DIRECTLY FROM GITHUB ===========================
 def run_model_from_github(model_url, data_path, simulation_id):
-    """Download the model from GitHub and execute it within the correct Python environment."""
+    """Download the model from GitHub and execute it with the uploaded data file."""
     model_path = "CaTarModel.py"  # Temporary local path for execution
 
     # Download model file from GitHub
     download_result = download_from_github(model_url, model_path)
 
-    # Run the model within the same Python environment
+    # Run the model
     try:
-        output = subprocess.run(
+        process = subprocess.Popen(
             ["python", model_path, data_path],
-            capture_output=True,
-            text=True,
-            check=True
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
         )
-        return f"✅ Simulation {simulation_id} completed successfully!\n\n{output.stdout}"
-    except subprocess.CalledProcessError as e:
-        return f"❌ Model execution failed:\n{e.stderr}"
+        output, error = process.communicate()
+        
+        if error:
+            return f"❌ Model execution failed: {error}"
+        
+        return f"✅ Simulation {simulation_id} completed successfully!\n\n{output}"
+    except Exception as e:
+        return f"❌ Error running model: {e}"
 
 # ======================== STREAMLIT UI ===========================
 st.set_page_config(layout="wide")  
