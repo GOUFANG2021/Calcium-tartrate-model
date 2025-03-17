@@ -4,6 +4,17 @@ import os
 import subprocess
 import gdown
 import datetime
+import streamlit as st
+import subprocess
+
+st.title("🔍 Environment Check")
+
+# Run pip freeze to see installed packages
+installed_packages = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
+
+# Display results
+st.text_area("Installed Packages", installed_packages.stdout)
+
 
 # ======================== DEFINE PATHS ===========================
 # GitHub repository base URL
