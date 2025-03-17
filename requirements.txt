@@ -1,6 +1,5 @@
-streamlit
+numpy
 pandas
 gdown
-pydrive2
-numpy
 openpyxl
+streamlit
