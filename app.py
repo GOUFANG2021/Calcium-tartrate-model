@@ -11,7 +11,6 @@ import gdown
 GITHUB_REPO = "https://github.com/GOUFANG2021/Calcium-tartrate-model/raw/main"
 
 # File download URLs from GitHub
-MODEL_PY_URL = f"{GITHUB_REPO}/CaTarModel.py"
 DATA_TEMPLATE_URL = f"{GITHUB_REPO}/Wine%20Data.xlsx"
 
 # Local directory for storing session files
@@ -28,11 +27,12 @@ def download_from_github(url, output_path):
         return f"❌ Failed to download {os.path.basename(output_path)}: {e}"
 
 # ======================== FUNCTION TO RUN MODEL ===========================
-def run_external_script(model_path, data_path):
-    """Run the model stored in the user's local folder."""
+def run_external_script(data_path):
+    """Run the model stored in the Streamlit environment using the user's uploaded data."""
     original_dir = os.getcwd()
+    model_path = "CaTarModel.py"  # Assumes model is already present in the environment
     try:
-        os.chdir(os.path.dirname(model_path))  # Set working directory to user's Downloads folder
+        os.chdir(os.path.dirname(data_path))  # Set working directory to user's Downloads folder
         process = subprocess.Popen(
             ["python", model_path, data_path],
             stdout=subprocess.PIPE,
@@ -63,29 +63,22 @@ if "uploaded_data" not in st.session_state:
     st.session_state.uploaded_data = None
 
 with col1:
-    # STEP 1: DOWNLOAD TEMPLATE & MODEL
-    st.subheader("Step 1: Download Required Files")
+    # STEP 1: DOWNLOAD TEMPLATE
+    st.subheader("Step 1: Download Required File")
     
     # Define paths for user’s local download folder
     template_path = os.path.join(LOCAL_SESSION_DIR, "Wine Data.xlsx")
-    model_path = os.path.join(LOCAL_SESSION_DIR, "CaTarModel.py")
 
-    # Download files from GitHub
+    # Download template file from GitHub
     download_result_template = download_from_github(DATA_TEMPLATE_URL, template_path)
-    download_result_model = download_from_github(MODEL_PY_URL, model_path)
 
-    # Provide download buttons
+    # Provide download button
     if os.path.exists(template_path):
         with open(template_path, "rb") as f:
             st.download_button("📥 Download Wine Data", f, file_name="Wine Data.xlsx")
 
-    if os.path.exists(model_path):
-        with open(model_path, "rb") as f:
-            st.download_button("📥 Download Model Script", f, file_name="CaTarModel.py")
-
-    # Show download status messages
+    # Show download status message
     st.write(download_result_template)
-    st.write(download_result_model)
 
     # STEP 2: UPLOAD MODIFIED WINE DATA
     st.subheader("Step 2: Upload Your Modified Wine Data (Excel)")
@@ -113,7 +106,7 @@ with col1:
                 f.write(st.session_state.uploaded_data.getbuffer())
 
             # Run model from user's local folder
-            results = run_external_script(model_path, uploaded_file_path)
+            results = run_external_script(uploaded_file_path)
 
             # Store results
             st.session_state.simulation_results[f"Simulation {session_number}"] = results  
