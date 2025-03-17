@@ -66,7 +66,7 @@ if "uploaded_data" not in st.session_state:
 
 with col1:
     # STEP 1: DOWNLOAD TEMPLATE
-    st.subheader("Step 1: Download Required File")
+    st.subheader("Step 1: Download Data Format and fill it with your wine data in the input sheet")
     
     template_path = "Wine Data.xlsx"  # Temporary path for execution
     download_result_template = download_from_github(DATA_TEMPLATE_URL, template_path)
@@ -74,7 +74,7 @@ with col1:
     # Provide download button
     if os.path.exists(template_path):
         with open(template_path, "rb") as f:
-            st.download_button("📥 Download Wine Data", f, file_name="Wine Data.xlsx")
+            st.download_button("📥 Download Data Format", f, file_name="Wine Data.xlsx")
 
     # Show download status message
     st.write(download_result_template)
@@ -121,5 +121,7 @@ with col2:
 
     # ADDITIONAL WARNING MESSAGE
     st.warning(
-        "⚠️ If the model does not cover your data, please reformat and try again."
+        "⚠️ The model may not achieve coverage if the input data falls outside the simulation range. "
+        "If this occurs, please stop the simulation, delete the uploaded Excel file, and upload a new data file. "
+        "Remember to maintain the same format and file name for the input file."
     )
