@@ -88,7 +88,7 @@ with col1:
         st.success(f"✅ Uploaded: {uploaded_file.name}")
 
     # STEP 3: RUN MODEL
-    st.subheader("Step 3: Run Model")
+    st.subheader("Step 3: Run Model")    
     if st.button("🚀 Run Model"):
         if st.session_state.uploaded_data is None:
             st.error("⚠️ Please upload a wine data file before running the model.")
