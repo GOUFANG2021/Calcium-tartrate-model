@@ -4,22 +4,41 @@ import os
 import shutil
 import datetime
 import subprocess
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+
+# ======================== GOOGLE DRIVE AUTHENTICATION ===========================
+def authenticate_drive():
+    """Authenticate and return Google Drive instance."""
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()  # This will open a browser for authentication
+    return GoogleDrive(gauth)
+
+drive = authenticate_drive()
+
+# Google Drive Folder ID where session data will be stored
+GOOGLE_DRIVE_FOLDER_ID = "1YDVVq0Ac3k43Ikq02uV9N_F4FMj73aGM"
 
 # ======================== DEFINE PATHS ===========================
-# Define the GitHub repository local directory
-REPO_URL = "https://github.com/GOUFANG2021/Calcium-tartrate-model.git"
-LOCAL_REPO_DIR = os.path.expanduser("~/Calcium-tartrate-model")  # Change if needed
-SESSION_DIR = os.path.join(LOCAL_REPO_DIR, "sessions")
+# Local folder for storing session files before upload
+LOCAL_SESSION_DIR = os.path.expanduser("~/sessions")
 
-# Clone the repository if not present
-if not os.path.exists(LOCAL_REPO_DIR):
-    subprocess.run(["git", "clone", REPO_URL, LOCAL_REPO_DIR], check=True)
+# Ensure session directory exists locally
+os.makedirs(LOCAL_SESSION_DIR, exist_ok=True)
 
-MODEL_PY_PATH = os.path.join(LOCAL_REPO_DIR, "CaTarModel.py")
-DATA_TEMPLATE_PATH = os.path.join(LOCAL_REPO_DIR, "Wine Data.xlsx")
-
-# Ensure session directory exists
-os.makedirs(SESSION_DIR, exist_ok=True)
+# ======================== FUNCTION TO UPLOAD TO GOOGLE DRIVE ===========================
+def upload_to_google_drive(file_path, file_name):
+    """Upload a file to Google Drive inside the specified folder."""
+    try:
+        file_drive = drive.CreateFile({
+            "title": file_name,
+            "parents": [{"id": GOOGLE_DRIVE_FOLDER_ID}]
+        })
+        file_drive.SetContentFile(file_path)
+        file_drive.Upload()
+        return f"✅ Uploaded {file_name} to Google Drive successfully!"
+    except Exception as e:
+        return f"❌ Google Drive upload failed: {e}"
 
 # ======================== FUNCTION TO RUN MODEL ===========================
 def run_external_script(model_path, data_path, session_path):
@@ -43,19 +62,6 @@ def run_external_script(model_path, data_path, session_path):
         os.chdir(original_dir)  # Ensure we revert back to original directory
         return f"❌ Error changing directory or running model: {e}"
 
-# ======================== FUNCTION TO PUSH TO GITHUB ===========================
-def push_to_github():
-    """Commit and push session data to GitHub."""
-    try:
-        os.chdir(LOCAL_REPO_DIR)  # Change directory to repo
-        subprocess.run(["git", "pull"], check=True)  # Ensure the latest updates
-        subprocess.run(["git", "add", "sessions/"], check=True)
-        subprocess.run(["git", "commit", "-m", "Auto-update session data"], check=True)
-        subprocess.run(["git", "push"], check=True)
-        return "✅ Session data pushed to GitHub successfully!"
-    except subprocess.CalledProcessError as e:
-        return f"❌ Git push failed: {e}"
-
 # ======================== STREAMLIT UI ===========================
 st.set_page_config(layout="wide")  # Reduce page border for better layout
 st.title("🍷 Calcium Tartrate Precipitation Predictor")
@@ -74,7 +80,7 @@ with col1:
     st.subheader("Step 1: Download Wine Data")
     st.download_button(
         "📥 Download Wine Data",
-        open(DATA_TEMPLATE_PATH, "rb"),
+        open("Wine Data.xlsx", "rb"),
         file_name="Wine Data.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
@@ -98,7 +104,7 @@ with col1:
             session_number = len(st.session_state.simulation_results) + 1
             session_name = f"Simulation {session_number}"
             session_id = f"session_{session_number}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            session_path = os.path.join(SESSION_DIR, session_id)
+            session_path = os.path.join(LOCAL_SESSION_DIR, session_id)
             os.makedirs(session_path, exist_ok=True)
             
             # Save uploaded file in session folder
@@ -106,19 +112,21 @@ with col1:
             with open(uploaded_file_path, "wb") as f:
                 f.write(st.session_state.uploaded_data.getbuffer())
             
-            # Copy CaTarModel.py to session folder with session-specific name
+            # Copy model script to session folder
             model_script_path = os.path.join(session_path, f"CaTarModel_{session_number}.py")
-            shutil.copy(MODEL_PY_PATH, model_script_path)
+            shutil.copy("CaTarModel.py", model_script_path)
             
-            # Run the downloaded model script with the uploaded file as input
+            # Run model
             try:
                 results = run_external_script(model_script_path, uploaded_file_path, session_path)
                 st.session_state.simulation_results[session_name] = results  # Store results with a descriptive name
                 st.success(f"✅ {session_name} completed! Please review your simulation results on the right ")
 
-                # Push session data to GitHub
-                push_result = push_to_github()
-                st.info(push_result)
+                # Upload session folder to Google Drive
+                for file in os.listdir(session_path):
+                    file_path = os.path.join(session_path, file)
+                    upload_result = upload_to_google_drive(file_path, file)
+                    st.info(upload_result)
 
             except Exception as e:
                 st.error(f"❌ Model execution failed: {e}")
