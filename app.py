@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import subprocess
 import gdown
+import datetime
 
 # ======================== DEFINE PATHS ===========================
 # GitHub repository base URL
@@ -22,7 +23,7 @@ def download_from_github(url, output_path):
         return f"❌ Failed to download {os.path.basename(output_path)}: {e}"
 
 # ======================== FUNCTION TO RUN MODEL DIRECTLY FROM GITHUB ===========================
-def run_model_from_github(model_url, data_path):
+def run_model_from_github(model_url, data_path, simulation_id):
     """Download the model from GitHub and execute it with the uploaded data file."""
     model_path = "CaTarModel.py"  # Temporary local path for execution
 
@@ -41,7 +42,8 @@ def run_model_from_github(model_url, data_path):
         
         if error:
             return f"❌ Model execution failed: {error}"
-        return output  # Capture and return printed output
+        
+        return f"✅ Simulation {simulation_id} completed successfully!\n\n{output}"
     except Exception as e:
         return f"❌ Error running model: {e}"
 
@@ -54,7 +56,7 @@ col1, col2 = st.columns([1, 1])
 
 # Ensure session state variables exist
 if "simulation_results" not in st.session_state:
-    st.session_state.simulation_results = {}
+    st.session_state.simulation_results = {}  # Keep previous results
 if "uploaded_data" not in st.session_state:
     st.session_state.uploaded_data = None
 
@@ -87,20 +89,23 @@ with col1:
         if st.session_state.uploaded_data is None:
             st.error("⚠️ Please upload a wine data file before running the model.")
         else:
+            # Generate a unique simulation ID using timestamp
+            simulation_id = f"Simulation_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
             # Save uploaded file temporarily
             uploaded_file_path = "Wine Data.xlsx"
             with open(uploaded_file_path, "wb") as f:
                 f.write(st.session_state.uploaded_data.getbuffer())
 
             # Run model from GitHub
-            results = run_model_from_github(MODEL_PY_URL, uploaded_file_path)
+            results = run_model_from_github(MODEL_PY_URL, uploaded_file_path, simulation_id)
 
-            # Store results
-            st.session_state.simulation_results["Latest Simulation"] = results  
-            st.success("✅ Model execution completed! Check results on the right.")
+            # Store results with unique identifier
+            st.session_state.simulation_results[simulation_id] = results  
+            st.success(f"✅ {simulation_id} completed! Check results on the right.")
 
 with col2:
-    # DISPLAY RESULTS FOR ALL SESSIONS
+    # DISPLAY RESULTS FOR ALL SIMULATIONS
     st.subheader("📊 Simulation Results")
     for session_name, results in st.session_state.simulation_results.items():
         with st.expander(session_name):
