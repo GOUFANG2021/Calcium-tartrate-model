@@ -30,10 +30,13 @@ def run_model_from_github(model_url, data_path, simulation_id):
     # Download model file from GitHub
     download_result = download_from_github(model_url, model_path)
 
+    # Explicitly use the correct Python environment
+    python_executable = os.environ.get("VIRTUAL_ENV", "/home/adminuser/venv/bin/python3")
+
     # Run the model
     try:
         process = subprocess.Popen(
-            ["python", model_path, data_path],
+            [python_executable, model_path, data_path],  # Use absolute path to Python
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -46,6 +49,7 @@ def run_model_from_github(model_url, data_path, simulation_id):
         return f"✅ Simulation {simulation_id} completed successfully!\n\n{output}"
     except Exception as e:
         return f"❌ Error running model: {e}"
+
 
 # ======================== STREAMLIT UI ===========================
 st.set_page_config(layout="wide")  
