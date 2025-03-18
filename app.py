@@ -18,7 +18,7 @@ def download_from_github(url, output_path):
     """Download a file from GitHub repository."""
     try:
         gdown.download(url, output_path, quiet=False)
-        return f"✅ Downloaded {os.path.basename(output_path)}!"
+        return f"✅ Downloaded {os.path.basename(output_path)}"
     except Exception as e:
         return f"❌ Failed to download {os.path.basename(output_path)}: {e}"
 
