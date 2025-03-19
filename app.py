@@ -121,7 +121,4 @@ with col2:
 
     # ADDITIONAL WARNING MESSAGE
     st.warning(
-        "⚠️ The model may not achieve coverage if the input data falls outside the simulation range. "
-        "If this occurs, please stop the simulation, delete the uploaded Excel file, and upload a new data file. "
-        "Remember to maintain the same format for the input file."
-    )
+        "⚠️ The model may not find a solution if the input data falls outside the simulation range. If this occurs, please delete the uploaded Excel file and upload a new one with the same format."    )
